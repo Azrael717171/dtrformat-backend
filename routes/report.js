@@ -2,17 +2,20 @@ const express = require('express');
 const router = express.Router();
 const Report = require('../models/report');
 
-
-
 // Create Report
 router.post('/generate', async (req, res) => {
   try {
     const { selectedNames, startDate, endDate } = req.body;
-    const newReport = new Report({ selectedNames, startDate, endDate });
-    await newReport.save();
-    res.status(201).json({ message: 'Report generated successfully', report: newReport });
+
+    // Create a separate report for each selected name
+    const reports = await Promise.all(selectedNames.map(async (nameId) => {
+      const newReport = new Report({ selectedName: nameId, startDate, endDate });
+      return await newReport.save();
+    }));
+
+    res.status(201).json({ message: 'Reports generated successfully', reports });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to generate report', error });
+    res.status(500).json({ message: 'Failed to generate reports', error });
   }
 });
 
@@ -40,6 +43,5 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ message: 'An error occurred while deleting the report', error: error.message });
   }
 });
-
 
 module.exports = router;
